@@ -14,6 +14,7 @@
 @property (weak) IBOutlet NSTextField *tip;
 @property (weak) IBOutlet NSTextField *createFileName;
 @property (unsafe_unretained) IBOutlet NSTextView *text;
+@property (weak) IBOutlet NSTextField *docTextField;
 
 @end
 
@@ -102,13 +103,11 @@
     }
     
     for (NSString *str in replaceArray) {
-        
-        
+    
         NSRegularExpression* regex2 = [NSRegularExpression regularExpressionWithPattern:@"[0-9]+" options: NSRegularExpressionCaseInsensitive error:NULL];
         
         NSArray *array2 = [regex2 matchesInString:str options:NSMatchingReportCompletion range:NSMakeRange(0, str.length)];
-        
-        
+
         NSString *re = str;
         if (array2.count>0) {
             NSTextCheckingResult *result = array2.firstObject;
@@ -125,9 +124,17 @@
     NSString *deskTopLocation = [NSHomeDirectoryForUser(NSUserName()) stringByAppendingPathComponent:@"Desktop"];
     
     //以下两行生成一个文件目录
-    NSString *hFilePath = [deskTopLocation stringByAppendingPathComponent: [NSString stringWithFormat:@"%@.h",fileName]];
+    NSString *hFilePath;
+    NSString *mFilePath;
     
-    NSString *mFilePath = [deskTopLocation stringByAppendingPathComponent: [NSString stringWithFormat:@"%@.m",fileName]];
+    if (self.docTextField.stringValue.length) {
+        NSString * tempFilePath = [deskTopLocation stringByAppendingPathComponent:self.docTextField.stringValue];
+        if (![[NSFileManager defaultManager] fileExistsAtPath:tempFilePath]) {
+            [[NSFileManager defaultManager] createDirectoryAtPath:tempFilePath withIntermediateDirectories:YES attributes:nil error:nil];
+        }
+        hFilePath = [tempFilePath stringByAppendingPathComponent: [NSString stringWithFormat:@"%@.h",fileName]];
+        mFilePath = [tempFilePath stringByAppendingPathComponent: [NSString stringWithFormat:@"%@.m",fileName]];
+    }
     
     NSString *hContent = @"";
     for (NSString *key in dict.allKeys) {
@@ -139,7 +146,7 @@
             //Bool类型
             content = [NSString stringWithFormat:@"@property (nonatomic,assign) BOOL %@;\n",key];
         }else if([type rangeOfString:@"NSArray"].length > 0){//数组
-            content = [NSString stringWithFormat:@"@property(nonatomic, strong) NSArray *%@;\n",key];
+            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSArray *%@;\n",key];
             NSArray *arr = value;
             if (arr.count > 0) {
                 if ([arr.firstObject isKindOfClass:[NSDictionary class]]) {
@@ -180,57 +187,10 @@
     NSString *regexStr2 = @"[^:][0-9]+[\\]\{\\}]";
     content = [self replace2WithContent:content regexStr:regexStr2];
     
-    content = [NSString stringWithFormat:@"{%@}",content];
-    NSLog(@"%@",content);
-    
     NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:[content dataUsingEncoding:NSUTF8StringEncoding] options:(NSJSONReadingMutableContainers) error:NULL];
     
     NSString *fileName = self.createFileName.stringValue;
     [self createFileWithDict:dict fileName:fileName];
-    
-    //
-    //    NSArray *contentArray = 
-    //    [content componentsSeparatedByCharactersInSet:[NSCharacterSet  newlineCharacterSet]];
-    //
-    //
-    //    content = [content stringByReplacingOccurrencesOfString:@"\n" withString:@""];
-    //    NSArray *array = 
-    //    [content componentsSeparatedByString:@","];
-    //    for (NSString *s in array) {
-    //        NSLog(@"%@",s);
-    //        NSLog(@"----------------");
-    //    }
-    //    NSLog(@"%@",array);
-    //    return;
-    //
-    //    NSString *hContent = @"";
-    //    for (NSString *line in array) {
-    //
-    //        NSArray *arr = [line componentsSeparatedByString:@":"];
-    //
-    //        NSString *key = arr.firstObject;
-    //        NSString *value = arr.lastObject;
-    //
-    //        NSArray *keyArr = [key componentsSeparatedByString:@"\""];
-    //        key = keyArr.lastObject;
-    //        //此处是去除有的接口从网页上复制下来包含行号
-    //        if ([key isEqualToString:@""]) {
-    //            NSInteger count = keyArr.count;
-    //            key = keyArr[count-2];
-    //        }
-    //        NSString *content;
-    //
-    //
-    //        if ([value rangeOfString:@"true"].length>0||[value rangeOfString:@"false"].length>0) {
-    //            content = [NSString stringWithFormat:@"@property (nonatomic,assign) BOOL %@;\n",key];
-    //        }else{
-    //            content = [NSString stringWithFormat:@"@property (nonatomic,copy) NSString *%@;\n",key];
-    //        }
-    //
-    //        hContent = [hContent stringByAppendingString:content];
-    //
-    //    }
-    //
 }
 
 -(void)runWriteWithContent:(NSString*)content path:(NSString*)path{
@@ -246,7 +206,6 @@
     NSData *data = [content dataUsingEncoding:NSUTF8StringEncoding];//把这个字符串转换成数据格式用于写入文件里
     [fileHandle writeData:data];//写入文件
     [fileHandle closeFile];//关闭文件
-    
 }
 
 
