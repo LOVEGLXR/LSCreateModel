@@ -142,11 +142,14 @@
         NSString *type = [[value class]description];
         NSLog(@"class ====== %@",type);
         NSString *content = @"";
-        if ([type rangeOfString:@"NSCFBoolean"].length>0) {
-            //Bool类型
+        if ([type rangeOfString:@"NSCFBoolean"].length > 0) {
+            // Bool 类型
             content = [NSString stringWithFormat:@"@property (nonatomic, assign) BOOL %@;\n",key];
+        }else if([type rangeOfString:@"NSCFNumber"].length > 0){
+            // NSCFNumber 类型
+            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSNumber * %@;\n",key];
         }else if([type rangeOfString:@"NSArray"].length > 0){//数组
-            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSArray *%@;\n",key];
+            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSArray * %@;\n",key];
             NSArray *arr = value;
             if (arr.count > 0) {
                 if ([arr.firstObject isKindOfClass:[NSDictionary class]]) {
@@ -154,7 +157,8 @@
                 }
             }
         }else{
-            content = [NSString stringWithFormat:@"@property (nonatomic, copy) NSString *%@;\n",key];
+            // __NSCFString 或者 NSCFConstantString
+            content = [NSString stringWithFormat:@"@property (nonatomic, copy) NSString * %@;\n",key];
         }
         hContent = [hContent stringByAppendingString:content];
     }
