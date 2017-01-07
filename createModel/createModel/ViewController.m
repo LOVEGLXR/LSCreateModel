@@ -27,7 +27,6 @@
 
 - (IBAction)create:(id)sender {
     
-    
     NSString *path = self.tip.stringValue;
     if ([[[self.text.string stringByReplacingOccurrencesOfString:@" " withString:@""] stringByReplacingOccurrencesOfString:@"\n" withString:@""] stringByReplacingOccurrencesOfString:@"\t" withString:@""].length <= 0 && [self.tip.stringValue isEqualToString:@"暂无目录"]) {
         NSAlert *alert = [[NSAlert alloc] init];
@@ -140,7 +139,7 @@
             //Bool类型
             content = [NSString stringWithFormat:@"@property (nonatomic,assign) BOOL %@;\n",key];
         }else if([type rangeOfString:@"NSArray"].length > 0){//数组
-            content = [NSString stringWithFormat:@"@property(nonatomic,strong)  NSArray *%@;\n",key];
+            content = [NSString stringWithFormat:@"@property(nonatomic, strong) NSArray *%@;\n",key];
             NSArray *arr = value;
             if (arr.count > 0) {
                 if ([arr.firstObject isKindOfClass:[NSDictionary class]]) {
@@ -148,25 +147,24 @@
                 }
             }
         }else{
-            content = [NSString stringWithFormat:@"@property (nonatomic,copy)   NSString *%@;\n",key];
+            content = [NSString stringWithFormat:@"@property (nonatomic, copy) NSString *%@;\n",key];
         }
         hContent = [hContent stringByAppendingString:content];
     }
     
-    NSString *fileHeader = [NSString stringWithFormat:@"//\n//  %@\n//  LangRen\n//\n//  Created by 酒诗 on 2016/12/20.\n//  Copyright © 2016年 langrengame.com. All rights reserved.\n//",fileName];
-    
-    NSString *hFile1 = @"\n#import <UIKit/UIKit.h>\n\n@i";
-    NSString *hFile2 = [NSString stringWithFormat:@"nterface %@ : NSObject\n\n\n",fileName];
-    
-    NSString *fileFooter1 = @"\n\n@e";
-    NSString *fileFooter2 = @"nd\n\n\n";
-    
-    NSString *hFile = [NSString stringWithFormat:@"%@%@%@%@%@%@",fileHeader,hFile1,hFile2,hContent,fileFooter1,fileFooter2];
+    // .h文件
+    NSString *fileHeader1 = [NSString stringWithFormat:@"//\n//  %@\n//  LangRen.h\n//\n//  Created by 酒诗 on 2016/12/20.\n//  Copyright © 2016年 langrengame.com. All rights reserved.\n//",fileName];
+    NSString *hFile1 = @"\n#import <UIKit/UIKit.h>\n\n";
+    NSString *hFile2 = [NSString stringWithFormat:@"@interface %@ : NSObject\n\n",fileName];
+    NSString *fileFooter1 = @"\n@end\n\n";
+    NSString *hFile = [NSString stringWithFormat:@"%@%@%@%@%@",fileHeader1,hFile1,hFile2,hContent,fileFooter1];
     [self runWriteWithContent:hFile path:hFilePath];
     
-    NSString *mFile1 = [NSString stringWithFormat:@"\n#import \"%@.h\"\n\n@i",fileName];
-    NSString *mFile2 = [NSString stringWithFormat:@"mplementation %@\n\n\n",fileName];
-    NSString *mFile = [NSString stringWithFormat:@"%@%@%@%@%@",fileHeader,mFile1,mFile2,fileFooter1,fileFooter2];
+    // .m文件
+    NSString *fileHeader2 = [NSString stringWithFormat:@"//\n//  %@.m\n//  LangRen\n//\n//  Created by 酒诗 on 2016/12/20.\n//  Copyright © 2016年 langrengame.com. All rights reserved.\n//",fileName];
+    NSString *mFile1 = [NSString stringWithFormat:@"\n#import \"%@.h\"\n\n",fileName];
+    NSString *mFile2 = [NSString stringWithFormat:@"@implementation %@\n",fileName];
+    NSString *mFile = [NSString stringWithFormat:@"%@%@%@%@",fileHeader2,mFile1,mFile2,fileFooter1];
     [self runWriteWithContent:mFile path:mFilePath];
 }
 
@@ -179,7 +177,7 @@
     NSString *regexStr1 = @"[0-9]+\"[a-zA-Z0-9]+";
     content = [self replace1WithContent:content regexStr:regexStr1];
     
-    NSString *regexStr2 = @"[^:][0-9]+[\]\{\}]";
+    NSString *regexStr2 = @"[^:][0-9]+[\\]\{\\}]";
     content = [self replace2WithContent:content regexStr:regexStr2];
     
     content = [NSString stringWithFormat:@"{%@}",content];
