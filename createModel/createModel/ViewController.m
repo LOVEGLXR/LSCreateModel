@@ -144,7 +144,7 @@
         NSString *content = @"";
         if ([type rangeOfString:@"NSCFBoolean"].length>0) {
             //Bool类型
-            content = [NSString stringWithFormat:@"@property (nonatomic,assign) BOOL %@;\n",key];
+            content = [NSString stringWithFormat:@"@property (nonatomic, assign) BOOL %@;\n",key];
         }else if([type rangeOfString:@"NSArray"].length > 0){//数组
             content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSArray *%@;\n",key];
             NSArray *arr = value;
