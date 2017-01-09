@@ -15,6 +15,7 @@
 @property (weak) IBOutlet NSTextField *createFileName;
 @property (unsafe_unretained) IBOutlet NSTextView *text;
 @property (weak) IBOutlet NSTextField *docTextField;
+@property(nonatomic,strong)NSMutableArray * formateDicArr;
 
 @end
 
@@ -22,14 +23,18 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
+
     // Do any additional setup after loading the view.
+}
+
+- (IBAction)resetFormatCondition:(id)sender {
+    [self.formateDicArr removeAllObjects];
 }
 
 - (IBAction)create:(id)sender {
     
     NSString *path = self.tip.stringValue;
-    if ([[[self.text.string stringByReplacingOccurrencesOfString:@" " withString:@""] stringByReplacingOccurrencesOfString:@"\n" withString:@""] stringByReplacingOccurrencesOfString:@"\t" withString:@""].length <= 0 && [self.tip.stringValue isEqualToString:@"暂无目录"]) {
+    if ([[[self.text.string stringByReplacingOccurrencesOfString:@" " withString:@""] stringByReplacingOccurrencesOfString:@"\n" withString:@""] stringByReplacingOccurrencesOfString:@"\t" withString:@""].length <= 0 && [self.tip.stringValue isEqualToString:@"文件存放目录"]) {
         NSAlert *alert = [[NSAlert alloc] init];
         
         [alert setMessageText:@"没有粘贴字符串到输入框或拖拽本地文件到弹窗中"];
@@ -92,7 +97,6 @@
 }
 -(NSString*)replace2WithContent:(NSString*)content regexStr:(NSString*)regexStr{
     
-    
     NSRegularExpression* regex = [NSRegularExpression regularExpressionWithPattern:regexStr options: NSRegularExpressionCaseInsensitive error:NULL];
     
     NSArray *array2 = [regex matchesInString:content options:NSMatchingReportCompletion range:NSMakeRange(0, content.length)];
@@ -119,6 +123,28 @@
     return content;
 }
 
+-(void)checkFormateDicWithDict:(NSDictionary*)dict{
+    
+    [self.formateDicArr addObject:dict];
+    for (NSString *key in dict.allKeys) {
+        id value = dict[ key];
+        NSString *type = [[value class] description];
+        NSLog(@"class ====== %@",type);
+        NSString *content = @"";
+        if([type rangeOfString:@"NSArray"].length > 0){//数组
+            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSArray * %@;\n",key];
+            NSArray *arr = value;
+            if (arr.count > 0) {
+                if ([arr.firstObject isKindOfClass:[NSDictionary class]]) {
+                    [self checkFormateDicWithDict:arr.firstObject];
+                }
+            }
+        }else if([type rangeOfString:@"NSDictionary"].length > 0){
+            [self checkFormateDicWithDict:value];
+        }
+    }
+}
+
 -(void)createFileWithDict:(NSDictionary*)dict fileName:(NSString*)fileName
 {
     NSString *deskTopLocation = [NSHomeDirectoryForUser(NSUserName()) stringByAppendingPathComponent:@"Desktop"];
@@ -139,7 +165,7 @@
     NSString *hContent = @"";
     for (NSString *key in dict.allKeys) {
         id value = dict[ key];
-        NSString *type = [[value class]description];
+        NSString *type = [[value class] description];
         NSLog(@"class ====== %@",type);
         NSString *content = @"";
         if ([type rangeOfString:@"NSCFBoolean"].length > 0) {
@@ -147,18 +173,14 @@
             content = [NSString stringWithFormat:@"@property (nonatomic, assign) BOOL %@;\n",key];
         }else if([type rangeOfString:@"NSCFNumber"].length > 0){
             // NSCFNumber 类型
-            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSNumber * %@;\n",key];
+            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSNumber <Optional>* %@;\n",key];
         }else if([type rangeOfString:@"NSArray"].length > 0){//数组
-            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSArray * %@;\n",key];
-            NSArray *arr = value;
-            if (arr.count > 0) {
-                if ([arr.firstObject isKindOfClass:[NSDictionary class]]) {
-                    [self createFileWithDict:arr.firstObject fileName:[NSString stringWithFormat:@"%@%@",fileName,[self getFirstLetterFromString:key]]];
-                }
-            }
+            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSArray <ToReplaceModel,Optional>* %@;\n",key];
+        }else if([type rangeOfString:@"NSDictionary"].length > 0){
+            content = [NSString stringWithFormat:@"@property (nonatomic, strong) ToReplaceModel <Optional>* %@;\n",key];
         }else{
             // __NSCFString 或者 NSCFConstantString
-            content = [NSString stringWithFormat:@"@property (nonatomic, copy) NSString * %@;\n",key];
+            content = [NSString stringWithFormat:@"@property (nonatomic, copy) NSString <Optional>* %@;\n",key];
         }
         hContent = [hContent stringByAppendingString:content];
     }
@@ -181,20 +203,38 @@
 
 -(void)parse:(NSString*)content{
     
-    content = [content stringByReplacingOccurrencesOfString:@" " withString:@""];
-    content = [content stringByReplacingOccurrencesOfString:@"\t" withString:@""];
+    if(!self.formateDicArr.count){
+        content = [content stringByReplacingOccurrencesOfString:@" " withString:@""];
+        content = [content stringByReplacingOccurrencesOfString:@"\t" withString:@""];
+        
+        //过滤掉因为复制粘贴带来的行号
+        NSString *regexStr1 = @"[0-9]+\"[a-zA-Z0-9]+";
+        content = [self replace1WithContent:content regexStr:regexStr1];
+        
+        NSString *regexStr2 = @"[^:][0-9]+[\\]\{\\}]";
+        content = [self replace2WithContent:content regexStr:regexStr2];
+        
+        NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:[content dataUsingEncoding:NSUTF8StringEncoding] options:(NSJSONReadingMutableContainers) error:NULL];
+        [self checkFormateDicWithDict:dict];
+    }
     
-    //过滤掉因为复制粘贴带来的行号
-    NSString *regexStr1 = @"[0-9]+\"[a-zA-Z0-9]+";
-    content = [self replace1WithContent:content regexStr:regexStr1];
-    
-    NSString *regexStr2 = @"[^:][0-9]+[\\]\{\\}]";
-    content = [self replace2WithContent:content regexStr:regexStr2];
-    
-    NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:[content dataUsingEncoding:NSUTF8StringEncoding] options:(NSJSONReadingMutableContainers) error:NULL];
-    
-    NSString *fileName = self.createFileName.stringValue;
-    [self createFileWithDict:dict fileName:fileName];
+    if (self.formateDicArr.count){
+        NSString *fileName = self.createFileName.stringValue;
+        [self createFileWithDict:[self.formateDicArr firstObject] fileName:fileName];
+        [self.formateDicArr removeObjectAtIndex:0];
+        
+        if(self.formateDicArr.count){
+            self.createFileName.stringValue = @"";
+            NSDictionary * dic = [self.formateDicArr firstObject];
+            NSError *parseError = nil;
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dic options:NSJSONWritingPrettyPrinted error:&parseError];
+            NSString * dicJsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+            self.text.string = dicJsonStr;
+        }else {
+            self.createFileName.stringValue = @"";
+            self.text.string = @"";
+        }
+    }
 }
 
 -(void)runWriteWithContent:(NSString*)content path:(NSString*)path{
@@ -249,6 +289,13 @@
 
 - (IBAction)look:(id)sender {
     [[NSWorkspace sharedWorkspace]openURL:[NSURL URLWithString:@"https://github.com/lsmakethebest/LSCreateModel"]];
+}
+
+-(NSMutableArray *)formateDicArr{
+    if (!_formateDicArr) {
+        self.formateDicArr = [NSMutableArray array];
+    }
+    return _formateDicArr;
 }
 
 @end
