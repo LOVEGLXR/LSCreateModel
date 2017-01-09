@@ -183,9 +183,9 @@ typedef NS_ENUM(int,JsonParseType) {
             // NSCFNumber 类型
             content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSNumber <Optional>* %@;\n",key];
         }else if([type rangeOfString:@"NSArray"].length > 0){//数组
-            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSArray <ToReplaceModel,Optional>* %@;\n",key];
+            content = [NSString stringWithFormat:@"@property (nonatomic, strong) NSArray <<#ToReplaceModel#>,Optional>* %@;\n",key];
         }else if([type rangeOfString:@"NSDictionary"].length > 0){
-            content = [NSString stringWithFormat:@"@property (nonatomic, strong) ToReplaceModel <Optional>* %@;\n",key];
+            content = [NSString stringWithFormat:@"@property (nonatomic, strong) <#ToReplaceModel#> <Optional>* %@;\n",key];
         }else{
             // __NSCFString 或者 NSCFConstantString
             content = [NSString stringWithFormat:@"@property (nonatomic, copy) NSString <Optional>* %@;\n",key];
@@ -194,7 +194,7 @@ typedef NS_ENUM(int,JsonParseType) {
     }
     
     // .h文件
-    NSString *fileHeader1 = [NSString stringWithFormat:@"//\n//  %@\n//  LangRen.h\n//\n//  Created by 酒诗 on 2016/12/20.\n//  Copyright © 2016年 langrengame.com. All rights reserved.\n//",fileName];
+    NSString *fileHeader1 = [NSString stringWithFormat:@"//\n//  %@.h\n//  LangRen\n//\n//  Created by 酒诗 on 2016/12/20.\n//  Copyright © 2016年 langrengame.com. All rights reserved.\n//",fileName];
     
     NSString *hFile1 = @"\n#import <UIKit/UIKit.h>\n\n";
     NSString *hFile2 = [NSString stringWithFormat:@"@interface %@ : NSObject\n\n",fileName];
