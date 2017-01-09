@@ -9,6 +9,11 @@
 #import "ViewController.h"
 #import "DragDropView.h"
 
+typedef NS_ENUM(int,JsonParseType) {
+    NSObjectType,
+    JsonModelType
+};
+
 @interface ViewController ()<DragDropViewDelegate>
 
 @property (weak) IBOutlet NSTextField *tip;
@@ -16,6 +21,7 @@
 @property (unsafe_unretained) IBOutlet NSTextView *text;
 @property (weak) IBOutlet NSTextField *docTextField;
 @property(nonatomic,strong)NSMutableArray * formateDicArr;
+@property(nonatomic,assign)JsonParseType parseType;
 
 @end
 
@@ -23,7 +29,9 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-
+    
+    self.parseType = JsonModelType;
+    
     // Do any additional setup after loading the view.
 }
 
@@ -187,8 +195,20 @@
     
     // .h文件
     NSString *fileHeader1 = [NSString stringWithFormat:@"//\n//  %@\n//  LangRen.h\n//\n//  Created by 酒诗 on 2016/12/20.\n//  Copyright © 2016年 langrengame.com. All rights reserved.\n//",fileName];
+    
     NSString *hFile1 = @"\n#import <UIKit/UIKit.h>\n\n";
     NSString *hFile2 = [NSString stringWithFormat:@"@interface %@ : NSObject\n\n",fileName];
+    switch (self.parseType) {
+        case JsonModelType:
+            hFile1 = @"\n#import <JSONModel/JSONModel.h>\n\n";
+            hFile2 = [NSString stringWithFormat:@"@interface %@ : JSONModel\n\n",fileName];
+            break;
+        case NSObjectType:
+            break;
+        default:
+            break;
+    }
+    
     NSString *fileFooter1 = @"\n@end\n\n";
     NSString *hFile = [NSString stringWithFormat:@"%@%@%@%@%@",fileHeader1,hFile1,hFile2,hContent,fileFooter1];
     [self runWriteWithContent:hFile path:hFilePath];
